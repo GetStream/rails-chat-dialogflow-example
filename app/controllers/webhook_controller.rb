@@ -13,21 +13,26 @@ class WebhookController < ApplicationController
   end
 
   def message
-    if params[:type] == 'message.new'
-      user = User.find_by handle: params[:user][:id]
-      if !user.nil?
-        session_id = Digest::SHA1.hexdigest(params[:cid])
-        channel = @chat.query_channels({
-          "cid" => params[:cid],
-        })["channels"][0]["channel"]
-        c = @chat.channel(channel["type"], channel_id: channel["id"])
-        if !channel["silence_bot"]
-          bot_response, end_conversation = query_bot(session_id, params[:message][:text])
-          if end_conversation
-            c.update({'silence_bot' => true})
-            c.add_members(["representative"])
+    valid_hook = @chat.verify_webhook(request.body.read, request.headers['X-SIGNATURE'])
+    if !valid_hook
+      render status: :bad_request
+    else
+      if params[:type] == 'message.new'
+        user = User.find_by handle: params[:user][:id]
+        if !user.nil?
+          session_id = Digest::SHA1.hexdigest(params[:cid])
+          channel = @chat.query_channels({
+            "cid" => params[:cid],
+          })["channels"][0]["channel"]
+          c = @chat.channel(channel["type"], channel_id: channel["id"])
+          if !channel["silence_bot"]
+            bot_response, end_conversation = query_bot(session_id, params[:message][:text])
+            if end_conversation
+              c.update({'silence_bot' => true})
+              c.add_members(["representative"])
+            end
+            c.send_message({'id' => SecureRandom.uuid, 'text' => bot_response}, "helperbot")
           end
-          c.send_message({'id' => SecureRandom.uuid, 'text' => bot_response}, "helperbot")
         end
       end
     end
