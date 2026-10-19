@@ -1,3 +1,5 @@
+> **This repository is archived and will be deleted.** It is no longer maintained. For a current alternative, see [getstream-ruby](https://github.com/GetStream/getstream-ruby).
+
 # Example Rails Application with Stream Chat
 
 This example app shows you how you can use [Stream
